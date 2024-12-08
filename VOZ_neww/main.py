@@ -209,7 +209,7 @@ def sentiment_summary(conn = Depends(get_db)):
 @app.get("/messages/sentiment")
 def get_messages(
     conn = Depends(get_db),
-    limit: int = Query(10, ge=1, le=100),
+    limit: int = Query(5, ge=1, le=100),
     offset: int = Query(0, ge=0),
     thread_id: Optional[str] = None
 ):

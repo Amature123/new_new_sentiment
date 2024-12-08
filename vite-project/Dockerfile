@@ -1,8 +1,7 @@
-
-FROM alpine:3.20
+FROM node:18.17.1
 WORKDIR /app  
-COPY package.json /app  
+COPY package*.json ./
 RUN npm install  
-COPY . /app  
-EXPOSE git   
-CMD node index.js
+COPY . .
+RUN npm run build 
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
