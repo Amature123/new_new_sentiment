@@ -2,53 +2,43 @@ import psycopg2
 import logging
 from datetime import datetime
 import pytz
-from tensorflow.keras.models import load_model
-import pickle
-import tensorflow as tf
-from pyvi import ViTokenizer
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.models import model_from_json
+import torch
+from transformers import RobertaForSequenceClassification, AutoTokenizer
 tz = pytz.timezone('Asia/Ho_Chi_Minh')
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-def preprocess_raw_input(raw_input, tokenizer):
-    input_text_pre = list(tf.keras.preprocessing.text.text_to_word_sequence(raw_input))
-    input_text_pre = " ".join(input_text_pre)
-    input_text_pre_accent = ViTokenizer.tokenize(input_text_pre)
-    tokenized_data_text = tokenizer.texts_to_sequences([input_text_pre_accent])
-    vec_data = pad_sequences(tokenized_data_text, padding='post', maxlen=335)
-    return vec_data
+model_path = "./models/"
+tokenizer_path = "./token/"
 
-def inference_model(input_feature, model):
-    output = model(input_feature).numpy()[0]
-    result = output.argmax()
-    label_dict = {'tiêu cực': 0, 'trung lập': 1, 'tích cực': 2}
-    label = list(label_dict.keys())
-    return label[int(result)]
+model = RobertaForSequenceClassification.from_pretrained(model_path)
+tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+def predictions(text):
 
-def prediction(raw_input, tokenizer, model):
-    input_model = preprocess_raw_input(raw_input, tokenizer)
-    result= inference_model(input_model, model)
-    return result
-model_path = "./models/model.pkl"
-tokenizer_data_path = "./models/tokenizer_data.pkl"
-with open(model_path, "rb") as model_file:
-    my_model = pickle.load(model_file)
-model_structure, model_weights = my_model 
-model = model_from_json(model_structure)
-model.set_weights(model_weights)  
+    # Load model and tokenizer
 
-with open(tokenizer_data_path, "rb") as tokenizer_file:
-    my_tokenizer = pickle.load(tokenizer_file)
-
+    input_ids = torch.tensor([tokenizer.encode(text, max_length=256, truncation=True)])
+    
+    # Get prediction
+    with torch.no_grad():
+        out = model(input_ids)
+        result = out.logits.softmax(dim=-1).tolist()[0]
+        
+        # Convert to -1, 0, 1 based on highest probability
+        if max(result) == result[0]:
+            return 'NEGATIVE'
+        elif max(result) == result[1]:
+            return 'POSITIVE'
+        else:
+            return 'NEUTRAL'
 class FetchMessagePipeline:
 
     def analyze_sentiment(self, text):
+
         try:
             # Get sentiment label from underthesea
-            sentiment_label = prediction(text,my_tokenizer,model)
+            sentiment_label = predictions(text)
             
             # Convert sentiment labels to counts
             sentiment_counts = {
@@ -58,9 +48,9 @@ class FetchMessagePipeline:
             }
             
             # Increment the appropriate counter based on sentiment
-            if sentiment_label == 'tích cực':
+            if sentiment_label == 'POSITIVE':
                 sentiment_counts['positive'] = 1
-            elif sentiment_label == 'tiêu cực':
+            elif sentiment_label == 'NEGATIVE':
                 sentiment_counts['negative'] = 1
             else:
                 sentiment_counts['neutral'] = 1

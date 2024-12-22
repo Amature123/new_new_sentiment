@@ -46,6 +46,7 @@ with open(tokenizer_data_path, "rb") as tokenizer_file:
 class FetchMessagePipeline:
 
     def analyze_sentiment(self, text):
+        """Analyze sentiment using underthesea"""
         try:
             # Get sentiment label from underthesea
             sentiment_label = prediction(text,my_tokenizer,model)
@@ -63,7 +64,7 @@ class FetchMessagePipeline:
             elif sentiment_label == 'tiêu cực':
                 sentiment_counts['negative'] = 1
             else:
-                sentiment_counts['neutral'] = 1
+                sentiment_counts['trung lập'] = 1
                 
             return sentiment_counts
             

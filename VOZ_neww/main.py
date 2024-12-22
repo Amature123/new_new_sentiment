@@ -4,7 +4,6 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Query, HTT
 from fastapi.middleware.cors import CORSMiddleware
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from underthesea import sentiment
 import os
 import logging
 import time
@@ -183,13 +182,6 @@ def get_messages_with_sentiment(conn, limit: int = 10, offset: int = 0, thread_i
         logger.error(f"Error fetching messages with sentiment: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Database query error: {str(e)}")
 
-def analyze_text_sentiment(text: str):
-    """Analyze sentiment of a given text using underthesea"""
-    try:
-        return sentiment(text)
-    except Exception as e:
-        logger.error(f"Error analyzing sentiment: {str(e)}")
-        return "neutral"
 
 # API endpoints
 @app.get("/stats/sentiment/iter")
@@ -216,10 +208,6 @@ def get_messages(
     """Get messages with their sentiment analysis"""
     return get_messages_with_sentiment(conn, limit, offset, thread_id)
 
-@app.post("/analyze/text")
-def analyze_text(text: str):
-    """Analyze sentiment of provided text"""
-    return {"sentiment": analyze_text_sentiment(text)}
 
 # Health check endpoint
 @app.get("/health")
