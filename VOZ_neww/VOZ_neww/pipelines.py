@@ -35,10 +35,7 @@ def prediction(raw_input, tokenizer, model):
 model_path = "./models/model.pkl"
 tokenizer_data_path = "./models/tokenizer_data.pkl"
 with open(model_path, "rb") as model_file:
-    my_model = pickle.load(model_file)
-model_structure, model_weights = my_model 
-model = model_from_json(model_structure)
-model.set_weights(model_weights)  
+    model = pickle.load(model_file)
 
 with open(tokenizer_data_path, "rb") as tokenizer_file:
     my_tokenizer = pickle.load(tokenizer_file)
